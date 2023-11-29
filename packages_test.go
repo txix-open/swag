@@ -12,7 +12,7 @@ import (
 
 func TestPackagesDefinitions_ParseFile(t *testing.T) {
 	pd := PackagesDefinitions{}
-	packageDir := "github.com/swaggo/swag/testdata/simple"
+	packageDir := "github.com/txix-open/swag/testdata/simple"
 	assert.NoError(t, pd.ParseFile(packageDir, "testdata/simple/main.go", nil, ParseAll))
 	assert.Equal(t, 1, len(pd.packages))
 	assert.Equal(t, 1, len(pd.files))
@@ -27,8 +27,8 @@ func TestPackagesDefinitions_collectAstFile(t *testing.T) {
 		Name: &ast.Ident{Name: "main.go"},
 	}
 
-	packageDir := "github.com/swaggo/swag/testdata/simple"
-	assert.NoError(t, pd.CollectAstFile(fileSet, packageDir, "testdata/simple/"+firstFile.Name.String(), firstFile, ParseAll))
+	packageDir := "github.com/txix-open/swag/testdata/simple"
+	assert.NoError(t, pd.collectAstFile(fileSet, packageDir, "testdata/simple/"+firstFile.Name.String(), firstFile, ParseAll))
 	assert.NotEmpty(t, pd.packages[packageDir])
 
 	absPath, _ := filepath.Abs("testdata/simple/" + firstFile.Name.String())

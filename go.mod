@@ -1,4 +1,4 @@
-module github.com/swaggo/swag
+module github.com/txix-open/swag
 
 go 1.24.0
 
@@ -6,6 +6,9 @@ require (
 	github.com/KyleBanks/depth v1.2.1
 	github.com/go-openapi/spec v0.22.1
 	github.com/stretchr/testify v1.11.1
+	github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2
+	github.com/go-openapi/spec v0.20.4
+	github.com/swaggo/swag v1.16.2
 	github.com/urfave/cli/v2 v2.3.0
 	golang.org/x/sync v0.12.0
 	golang.org/x/text v0.23.0
@@ -16,7 +19,6 @@ require (
 require (
 	github.com/PuerkitoBio/purell v1.1.1 // indirect
 	github.com/PuerkitoBio/urlesc v0.0.0-20170810143723-de5bf2ad4578 // indirect
-	github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.0-20190314233015-f79a8a8ca69d // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/go-openapi/jsonpointer v0.22.1 // indirect
