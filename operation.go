@@ -422,6 +422,7 @@ const (
 	formatTag           = "format"
 	titleTag            = "title"
 	validateTag         = "validate"
+	validTag            = "valid"
 	minimumTag          = "minimum"
 	maximumTag          = "maximum"
 	minLengthTag        = "minLength"

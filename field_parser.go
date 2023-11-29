@@ -10,6 +10,7 @@ import (
 	"sync"
 	"unicode"
 
+	"github.com/asaskevich/govalidator"
 	"github.com/go-openapi/spec"
 )
 
@@ -188,6 +189,7 @@ type structField struct {
 	enums        []any
 	enumVarNames []any
 	unique       bool
+	pattern      string
 }
 
 // splitNotWrapped slices s into all substrings separated by sep if sep is not
@@ -296,6 +298,11 @@ func (ps *tagBaseFieldParser) complementSchema(schema *spec.Schema, types []stri
 	validateTagValue := ps.tag.Get(validateTag)
 	if validateTagValue != "" {
 		parseValidTags(validateTagValue, field)
+	}
+
+	validTagValue := ps.tag.Get(validTag) // govalidator tag
+	if validTagValue != "" && validTagValue != "-" {
+		processValidTag(validTagValue, field)
 	}
 
 	enumsTagValue := ps.tag.Get(enumsTag)
@@ -476,6 +483,7 @@ func (ps *tagBaseFieldParser) complementSchema(schema *spec.Schema, types []stri
 	eleSchema.MaxLength = field.maxLength
 	eleSchema.MinLength = field.minLength
 	eleSchema.Enum = field.enums
+	eleSchema.Pattern = field.pattern
 
 	return nil
 }
@@ -537,16 +545,136 @@ func (ps *tagBaseFieldParser) IsRequired() (bool, error) {
 		}
 	}
 
-	jsonTag := ps.tag.Get(jsonTag)
-	if jsonTag != "" {
-		for _, val := range strings.Split(jsonTag, ",") {
-			if val == omitEmptyLabel {
+	validTagVal := ps.tag.Get(validTag)
+	if validTagVal != "" && validTagVal != "-" {
+		for _, val := range strings.Split(validTagVal, ",") {
+			switch val {
+			case requiredLabel:
+				return true, nil
+			case optionalLabel:
 				return false, nil
 			}
 		}
 	}
 
 	return ps.p.RequiredByDefault, nil
+}
+
+func processValidTag(tag string, structField *structField) {
+	optionsMap := make(map[string]string)
+	options := strings.Split(tag, ",")
+
+	for _, option := range options {
+		option = strings.TrimSpace(option)
+
+		validationOptions := strings.Split(option, "~")
+		if !isValidTag(validationOptions[0]) {
+			continue
+		}
+		if len(validationOptions) == 2 {
+			optionsMap[validationOptions[0]] = validationOptions[1]
+		} else {
+			optionsMap[validationOptions[0]] = ""
+		}
+	}
+	validators := make(map[string][]string, len(optionsMap))
+	for val := range optionsMap {
+		f, args := getValidTagValidatorFunction(val)
+		validators[f] = args
+	}
+	setValidTagValidators(validators, structField)
+}
+
+func setValidTagValidators(validators map[string][]string, t *structField) {
+	/* required checked by IsRequired() */
+	for f, args := range validators {
+		switch f {
+		case "uri":
+			fallthrough
+		case "email":
+			fallthrough
+		case "ipv4":
+			fallthrough
+		case "ipv6":
+			t.formatType = f
+		case "matches":
+			if len(args) > 0 {
+				t.pattern = args[0]
+			}
+		case "host":
+			t.formatType = "hostname"
+		// case "required":
+		// 	t.isRequired = true
+		case "length":
+			fallthrough
+		case "runelength":
+			if len(args) > 0 {
+				if val, err := strconv.ParseInt(args[0], 10, 64); err == nil {
+					t.minLength = &val
+				}
+				if len(args) > 1 {
+					if val, err := strconv.ParseInt(args[1], 10, 64); err == nil {
+						t.maxLength = &val
+					}
+				}
+			}
+		case "in":
+			if len(args) > 0 {
+				vals := strings.Split(args[0], "|")
+				enum := make([]interface{}, len(vals))
+				for i, val := range vals {
+					enum[i] = val
+				}
+				t.enums = append(t.enums, enum...)
+			}
+		case "range":
+			if len(args) > 0 {
+				if val, err := strconv.ParseFloat(args[0], 64); err == nil {
+					t.minimum = &val
+				}
+				if len(args) > 1 {
+					if val, err := strconv.ParseFloat(args[1], 64); err == nil {
+						t.maximum = &val
+					}
+				}
+			}
+		}
+	}
+}
+
+func getValidTagValidatorFunction(val string) (string, []string) {
+	for key, value := range govalidator.ParamTagRegexMap {
+		ps := value.FindStringSubmatch(val)
+		l := len(ps)
+		if l < 2 {
+			continue
+		}
+		args := make([]string, l-1)
+		for i := 1; i < l; i++ {
+			args[i-1] = ps[i]
+		}
+		return key, args
+	}
+	return val, []string{}
+}
+
+func isValidTag(s string) bool {
+	if s == "" {
+		return false
+	}
+	for _, c := range s {
+		switch {
+		case strings.ContainsRune("\\'\"!#$%&()*+-./:<=>?@[]^_{|}~ ", c):
+			// Backslash and quote chars are reserved, but
+			// otherwise any punctuation chars are allowed
+			// in a tag name.
+		default:
+			if !unicode.IsLetter(c) && !unicode.IsDigit(c) {
+				return false
+			}
+		}
+	}
+	return true
 }
 
 func parseValidTags(validTag string, sf *structField) {
