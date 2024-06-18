@@ -3,7 +3,7 @@ package api
 import (
 	"net/http"
 
-	"github.com/integration-system/swag/testdata/nested2"
+	"github.com/txix-open/swag/testdata/nested2"
 )
 
 type Foo struct {

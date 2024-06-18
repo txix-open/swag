@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/integration-system/swag/example/basic/web"
+	"github.com/txix-open/swag/example/basic/web"
 )
 
 // GetStringByInt example

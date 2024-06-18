@@ -4,8 +4,8 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/integration-system/swag/testdata/alias_type/types"
-	"github.com/integration-system/swag/testdata/global_override/data"
+	"github.com/txix-open/swag/testdata/alias_type/types"
+	"github.com/txix-open/swag/testdata/global_override/data"
 )
 
 // @Summary Get application

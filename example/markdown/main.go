@@ -4,9 +4,9 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/integration-system/swag/example/markdown/api"
-	_ "github.com/integration-system/swag/example/markdown/docs"
 	httpSwagger "github.com/swaggo/http-swagger"
+	"github.com/txix-open/swag/example/markdown/api"
+	_ "github.com/txix-open/swag/example/markdown/docs"
 )
 
 //	@title			Swagger Example API

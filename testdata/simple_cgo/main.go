@@ -12,7 +12,7 @@ import "C"
 import (
 	"net/http"
 
-	"github.com/integration-system/swag/testdata/simple_cgo/api"
+	"github.com/txix-open/swag/testdata/simple_cgo/api"
 )
 
 // @title Swagger Example API

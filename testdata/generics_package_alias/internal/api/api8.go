@@ -1,8 +1,8 @@
 package api
 
 import (
-	_ "github.com/integration-system/swag/testdata/generics_package_alias/internal/path1/v1"
-	_ "github.com/integration-system/swag/testdata/generics_package_alias/internal/path2/v1"
+	_ "github.com/txix-open/swag/testdata/generics_package_alias/internal/path1/v1"
+	_ "github.com/txix-open/swag/testdata/generics_package_alias/internal/path2/v1"
 )
 
 // @Summary Create movie

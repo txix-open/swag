@@ -3,8 +3,8 @@ package api
 import (
 	"net/http"
 
-	"github.com/integration-system/swag/testdata/generics_arrays/types"
-	"github.com/integration-system/swag/testdata/generics_arrays/web"
+	"github.com/txix-open/swag/testdata/generics_arrays/types"
+	"github.com/txix-open/swag/testdata/generics_arrays/web"
 )
 
 // @Summary List Posts

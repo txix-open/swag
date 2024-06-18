@@ -3,8 +3,8 @@ package main
 import (
 	"net/http"
 
-	"github.com/integration-system/swag/example/basic/api"
-	"github.com/integration-system/swag/testdata/invalid_external_pkg/invalid"
+	"github.com/txix-open/swag/example/basic/api"
+	"github.com/txix-open/swag/testdata/invalid_external_pkg/invalid"
 )
 
 // @title Swagger Example API

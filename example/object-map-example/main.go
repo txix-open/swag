@@ -2,8 +2,8 @@ package main
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/integration-system/swag/example/object-map-example/controller"
-	_ "github.com/integration-system/swag/example/object-map-example/docs"
+	"github.com/txix-open/swag/example/object-map-example/controller"
+	_ "github.com/txix-open/swag/example/object-map-example/docs"
 
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"

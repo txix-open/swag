@@ -1,6 +1,6 @@
 package web
 
-import "github.com/integration-system/swag/testdata/generics_property/types"
+import "github.com/txix-open/swag/testdata/generics_property/types"
 
 type PostSelector func(selector func())
 

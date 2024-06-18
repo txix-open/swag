@@ -3,7 +3,7 @@ package api
 import (
 	"net/http"
 
-	_ "github.com/integration-system/swag/testdata/conflict_name/model"
+	_ "github.com/txix-open/swag/testdata/conflict_name/model"
 )
 
 // @Tags Health

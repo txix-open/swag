@@ -3,7 +3,7 @@ package data
 import (
 	"time"
 
-	"github.com/integration-system/swag/testdata/alias_type/types"
+	"github.com/txix-open/swag/testdata/alias_type/types"
 )
 
 type TimeContainer struct {

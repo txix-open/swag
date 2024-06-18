@@ -3,7 +3,7 @@ package api
 import (
 	"net/http"
 
-	"github.com/integration-system/swag/testdata/composition/common"
+	"github.com/txix-open/swag/testdata/composition/common"
 )
 
 type Foo struct {

@@ -1,4 +1,4 @@
-module github.com/integration-system/swag
+module github.com/txix-open/swag
 
 go 1.18
 
