@@ -3,7 +3,7 @@ package global_override
 import (
 	"net/http"
 
-	"github.com/integration-system/swag/testdata/global_override/api"
+	"github.com/txix-open/swag/testdata/global_override/api"
 )
 
 // @title Swagger Example API

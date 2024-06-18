@@ -1,9 +1,9 @@
 package main
 
 import (
-	"github.com/integration-system/swag"
-	"github.com/integration-system/swag/testdata/delims/api"
-	_ "github.com/integration-system/swag/testdata/delims/docs"
+	"github.com/txix-open/swag"
+	"github.com/txix-open/swag/testdata/delims/api"
+	_ "github.com/txix-open/swag/testdata/delims/docs"
 )
 
 func ReadDoc() string {

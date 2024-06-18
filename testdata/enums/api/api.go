@@ -1,6 +1,6 @@
 package api
 
-import "github.com/integration-system/swag/testdata/enums/types"
+import "github.com/txix-open/swag/testdata/enums/types"
 
 //	 post students
 //

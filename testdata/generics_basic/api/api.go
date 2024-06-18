@@ -3,8 +3,8 @@ package api
 import (
 	"net/http"
 
-	"github.com/integration-system/swag/testdata/generics_basic/types"
-	"github.com/integration-system/swag/testdata/generics_basic/web"
+	"github.com/txix-open/swag/testdata/generics_basic/types"
+	"github.com/txix-open/swag/testdata/generics_basic/web"
 )
 
 type Response[T any, X any] struct {

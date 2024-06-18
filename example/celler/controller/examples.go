@@ -6,7 +6,7 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
-	"github.com/integration-system/swag/example/celler/httputil"
+	"github.com/txix-open/swag/example/celler/httputil"
 )
 
 // PingExample godoc

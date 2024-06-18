@@ -3,8 +3,8 @@ package api
 import (
 	"net/http"
 
-	"github.com/integration-system/swag/testdata/generics_nested/types"
-	"github.com/integration-system/swag/testdata/generics_nested/web"
+	"github.com/txix-open/swag/testdata/generics_nested/types"
+	"github.com/txix-open/swag/testdata/generics_nested/web"
 )
 
 // @Summary List Posts

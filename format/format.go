@@ -10,9 +10,8 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/swaggo/swag"
-	"golang.org/x/sync/errgroup"
 	"github.com/txix-open/swag"
+	"golang.org/x/sync/errgroup"
 )
 
 // Format implements `fmt` command for formatting swag comments in Go source

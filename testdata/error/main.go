@@ -3,7 +3,7 @@ package main
 import (
 	"net/http"
 
-	"github.com/integration-system/swag/testdata/error/api"
+	"github.com/txix-open/swag/testdata/error/api"
 )
 
 // @title Swagger Example API
