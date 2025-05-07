@@ -14,7 +14,7 @@ GOPATH:=$(shell $(GOCMD) env GOPATH)
 u := $(if $(update),-u)
 
 BINARY_NAME:=swag
-PACKAGES:=$(shell $(GOLIST) github.com/swaggo/swag github.com/swaggo/swag/cmd/swag github.com/swaggo/swag/gen github.com/swaggo/swag/format)
+PACKAGES:=$(shell $(GOLIST) github.com/txix-open/swag github.com/txix-open/swag/cmd/swag github.com/txix-open/swag/gen github.com/txix-open/swag/format)
 GOFILES:=$(shell find . -name "*.go" -type f)
 
 all: test build

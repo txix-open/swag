@@ -4372,7 +4372,7 @@ func TestParser_skipPackageByPrefix(t *testing.T) {
 	assert.False(t, parser.skipPackageByPrefix("github.com/txix-open/swag/cmd"))
 	assert.True(t, parser.skipPackageByPrefix("github.com/txix-open/swag/gen"))
 
-	parser = New(SetPackagePrefix("github.com/txix-open/swag/cmd,github.com/swaggo/swag/gen"))
+	parser = New(SetPackagePrefix("github.com/txix-open/swag/cmd,github.com/txix-open/swag/gen"))
 
 	assert.True(t, parser.skipPackageByPrefix("github.com/txix-open/swag"))
 	assert.False(t, parser.skipPackageByPrefix("github.com/txix-open/swag/cmd"))

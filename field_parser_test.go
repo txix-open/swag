@@ -766,19 +766,6 @@ func TestValidTags(t *testing.T) {
 	// 	assert.NoError(t, err)
 	// 	assert.Empty(t, schema.Enum)
 	// })
-		schema = spec.Schema{}
-		schema.Type = []string{"integer"}
-		err = newTagBaseFieldParser(
-			&Parser{},
-			&ast.Field{
-				Names: []*ast.Ident{{Name: "Test"}},
-				Tag: &ast.BasicLit{
-					Value: `json:"test" validate:"required,oneof=one two"`,
-				}},
-		).ComplementSchema(&schema)
-		assert.NoError(t, err)
-		assert.Empty(t, schema.Enum)
-	})
 
 	t.Run("Form Filed Name", func(t *testing.T) {
 		t.Parallel()
