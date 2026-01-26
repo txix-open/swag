@@ -127,7 +127,7 @@ func toSnakeCase(in string) string {
 		out    []rune
 	)
 
-	for idx := 0; idx < length; idx++ {
+	for idx := range length {
 		if idx > 0 && unicode.IsUpper(runes[idx]) &&
 			((idx+1 < length && unicode.IsLower(runes[idx+1])) || unicode.IsLower(runes[idx-1])) {
 			out = append(out, '_')
@@ -556,6 +556,14 @@ func (ps *tagBaseFieldParser) IsRequired() (bool, error) {
 			}
 		}
 	}
+	jsonTag := ps.tag.Get(jsonTag)
+	if jsonTag != "" {
+		for _, val := range strings.Split(jsonTag, ",") {
+			if val == omitEmptyLabel {
+				return false, nil
+			}
+		}
+	}
 
 	return ps.p.RequiredByDefault, nil
 }
@@ -823,5 +831,3 @@ func parseOneOfParam2(param string) []string {
 
 	return values
 }
-
-// ---.
