@@ -24,6 +24,7 @@ const (
 	outputTypesFlag          = "outputTypes"
 	parseVendorFlag          = "parseVendor"
 	parseDependencyFlag      = "parseDependency"
+	useStructNameFlag        = "useStructName"
 	parseDependencyLevelFlag = "parseDependencyLevel"
 	markdownFilesFlag        = "markdownFiles"
 	codeExampleFilesFlag     = "codeExampleFiles"
@@ -43,6 +44,8 @@ const (
 	packagePrefixFlag        = "packagePrefix"
 	stateFlag                = "state"
 	parseFuncBodyFlag        = "parseFuncBody"
+	parseGoPackagesFlag      = "parseGoPackages"
+	embedOutputTypesFlag     = "embedOutputTypes"
 )
 
 var initFlags = []cli.Flag{
@@ -98,6 +101,11 @@ var initFlags = []cli.Flag{
 		Name:    parseDependencyFlag,
 		Aliases: []string{"pd"},
 		Usage:   "Parse go files inside dependency folder, disabled by default",
+	},
+	&cli.BoolFlag{
+		Name:    useStructNameFlag,
+		Aliases: []string{"st"},
+		Usage:   "Dont use those ugly full-path names when using dependency flag",
 	},
 	&cli.StringFlag{
 		Name:    markdownFilesFlag,
@@ -185,6 +193,16 @@ var initFlags = []cli.Flag{
 		Name:  parseFuncBodyFlag,
 		Usage: "Parse API info within body of functions in go files, disabled by default",
 	},
+	&cli.BoolFlag{
+		Name:  parseGoPackagesFlag,
+		Usage: "Parse Go sources by golang.org/x/tools/go/packages, disabled by default",
+	},
+	&cli.StringFlag{
+		Name:    embedOutputTypesFlag,
+		Aliases: []string{"eot"},
+		Value:   "yaml",
+		Usage:   "List of output formats to embed (swagger.json, swagger.yaml), comma-separated (e.g. json,yaml)",
+	},
 }
 
 func initAction(ctx *cli.Context) error {
@@ -239,6 +257,9 @@ func initAction(ctx *cli.Context) error {
 			pdv = 1
 		}
 	}
+
+	embedOutputTypes := strings.Split(ctx.String(embedOutputTypesFlag), ",")
+
 	return gen.New().Build(&gen.Config{
 		SearchDir:           ctx.String(searchDirFlag),
 		Excludes:            ctx.String(excludeFlag),
@@ -251,6 +272,7 @@ func initAction(ctx *cli.Context) error {
 		ParseDependency:     pdv,
 		MarkdownFilesDir:    ctx.String(markdownFilesFlag),
 		ParseInternal:       ctx.Bool(parseInternalFlag),
+		UseStructNames:      ctx.Bool(useStructNameFlag),
 		GeneratedTime:       ctx.Bool(generatedTimeFlag),
 		RequiredByDefault:   ctx.Bool(requiredByDefaultFlag),
 		CodeExampleFilesDir: ctx.String(codeExampleFilesFlag),
@@ -267,6 +289,8 @@ func initAction(ctx *cli.Context) error {
 		PackagePrefix:       ctx.String(packagePrefixFlag),
 		State:               ctx.String(stateFlag),
 		ParseFuncBody:       ctx.Bool(parseFuncBodyFlag),
+		ParseGoPackages:     ctx.Bool(parseGoPackagesFlag),
+		EmbedOutputTypes:    embedOutputTypes,
 	})
 }
 

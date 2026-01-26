@@ -13,10 +13,36 @@ import (
 type ConstVariable struct {
 	Name    *ast.Ident
 	Type    ast.Expr
-	Value   interface{}
-	Comment *ast.CommentGroup
+	Value   any
+	Comment string
 	File    *ast.File
 	Pkg     *PackageDefinitions
+}
+
+// VariableName gets the name for this const variable, taking into account comment overrides.
+func (cv *ConstVariable) VariableName() string {
+	if ignoreNameOverride(cv.Name.Name) {
+		return cv.Name.Name[1:]
+	}
+
+	if overriddenName := cv.nameOverride(); overriddenName != "" {
+		return overriddenName
+	}
+
+	return cv.Name.Name
+}
+
+func (cv *ConstVariable) nameOverride() string {
+	if len(cv.Comment) == 0 {
+		return ""
+	}
+
+	comment := strings.TrimSpace(strings.TrimLeft(cv.Comment, "/"))
+	texts := overrideNameRegex.FindStringSubmatch(comment)
+	if len(texts) > 1 {
+		return texts[1]
+	}
+	return ""
 }
 
 var escapedChars = map[uint8]uint8{
@@ -75,7 +101,7 @@ func EvaluateEscapedString(text string) string {
 }
 
 // EvaluateDataConversion evaluate the type a explicit type conversion
-func EvaluateDataConversion(x interface{}, typeName string) interface{} {
+func EvaluateDataConversion(x any, typeName string) any {
 	switch value := x.(type) {
 	case int:
 		switch typeName {
@@ -359,7 +385,7 @@ func EvaluateDataConversion(x interface{}, typeName string) interface{} {
 }
 
 // EvaluateUnary evaluate the type and value of a unary expression
-func EvaluateUnary(x interface{}, operator token.Token, xtype ast.Expr) (interface{}, ast.Expr) {
+func EvaluateUnary(x any, operator token.Token, xtype ast.Expr) (any, ast.Expr) {
 	switch operator {
 	case token.SUB:
 		switch value := x.(type) {
@@ -402,7 +428,7 @@ func EvaluateUnary(x interface{}, operator token.Token, xtype ast.Expr) (interfa
 }
 
 // EvaluateBinary evaluate the type and value of a binary expression
-func EvaluateBinary(x, y interface{}, operator token.Token, xtype, ytype ast.Expr) (interface{}, ast.Expr) {
+func EvaluateBinary(x, y any, operator token.Token, xtype, ytype ast.Expr) (any, ast.Expr) {
 	if operator == token.SHR || operator == token.SHL {
 		var rightOperand uint64
 		yValue := reflect.ValueOf(y)

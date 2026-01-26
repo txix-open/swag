@@ -1052,35 +1052,6 @@ func TestParseSimpleApi_ForSnakecase(t *testing.T) {
         },
         "/testapi/get-struct-array-by-string/{some_id}": {
             "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    },
-                    {
-                        "BasicAuth": []
-                    },
-                    {
-                        "OAuth2Application": [
-                            "write"
-                        ]
-                    },
-                    {
-                        "OAuth2Implicit": [
-                            "read",
-                            "admin"
-                        ]
-                    },
-                    {
-                        "OAuth2AccessCode": [
-                            "read"
-                        ]
-                    },
-                    {
-                        "OAuth2Password": [
-                            "admin"
-                        ]
-                    }
-                ],
                 "description": "get struct array by ID",
                 "consumes": [
                     "application/json"
@@ -1157,7 +1128,36 @@ func TestParseSimpleApi_ForSnakecase(t *testing.T) {
                             "$ref": "#/definitions/web.APIError"
                         }
                     }
-                }
+                },
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BasicAuth": []
+                    },
+                    {
+                        "OAuth2Application": [
+                            "write"
+                        ]
+                    },
+                    {
+                        "OAuth2Implicit": [
+                            "read",
+                            "admin"
+                        ]
+                    },
+                    {
+                        "OAuth2AccessCode": [
+                            "read"
+                        ]
+                    },
+                    {
+                        "OAuth2Password": [
+                            "admin"
+                        ]
+                    }
+                ]
             }
         }
     },
@@ -1538,35 +1538,6 @@ func TestParseSimpleApi_ForLowerCamelcase(t *testing.T) {
         },
         "/testapi/get-struct-array-by-string/{some_id}": {
             "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    },
-                    {
-                        "BasicAuth": []
-                    },
-                    {
-                        "OAuth2Application": [
-                            "write"
-                        ]
-                    },
-                    {
-                        "OAuth2Implicit": [
-                            "read",
-                            "admin"
-                        ]
-                    },
-                    {
-                        "OAuth2AccessCode": [
-                            "read"
-                        ]
-                    },
-                    {
-                        "OAuth2Password": [
-                            "admin"
-                        ]
-                    }
-                ],
                 "description": "get struct array by ID",
                 "consumes": [
                     "application/json"
@@ -1643,7 +1614,36 @@ func TestParseSimpleApi_ForLowerCamelcase(t *testing.T) {
                             "$ref": "#/definitions/web.APIError"
                         }
                     }
-                }
+                },
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BasicAuth": []
+                    },
+                    {
+                        "OAuth2Application": [
+                            "write"
+                        ]
+                    },
+                    {
+                        "OAuth2Implicit": [
+                            "read",
+                            "admin"
+                        ]
+                    },
+                    {
+                        "OAuth2AccessCode": [
+                            "read"
+                        ]
+                    },
+                    {
+                        "OAuth2Password": [
+                            "admin"
+                        ]
+                    }
+                ]
             }
         }
     },
@@ -3995,6 +3995,73 @@ func TestParser_Skip(t *testing.T) {
 	assert.Error(t, parser.Skip(filepath.Clean("admin/release"), &mockFS{IsDirectory: true}))
 }
 
+func TestGetFuncDoc_NilPointerSafety(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name     string
+		decl     interface{}
+		wantDoc  *ast.CommentGroup
+		wantBool bool
+	}{
+		{
+			name: "GenDecl with empty Specs",
+			decl: &ast.GenDecl{
+				Tok:   token.VAR,
+				Specs: []ast.Spec{}, // empty specs
+			},
+			wantDoc:  nil,
+			wantBool: false,
+		},
+		{
+			name: "ValueSpec with empty Values",
+			decl: &ast.ValueSpec{
+				Values: []ast.Expr{}, // empty values
+			},
+			wantDoc:  nil,
+			wantBool: false,
+		},
+		{
+			name: "ValueSpec with nil Obj",
+			decl: &ast.ValueSpec{
+				Values: []ast.Expr{
+					&ast.Ident{
+						Name: "test",
+						Obj:  nil, // nil object
+					},
+				},
+			},
+			wantDoc:  nil,
+			wantBool: false,
+		},
+		{
+			name: "ValueSpec with nil Obj.Decl",
+			decl: &ast.ValueSpec{
+				Values: []ast.Expr{
+					&ast.Ident{
+						Name: "test",
+						Obj: &ast.Object{
+							Decl: nil, // nil declaration
+						},
+					},
+				},
+			},
+			wantDoc:  nil,
+			wantBool: false,
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			gotDoc, gotBool := getFuncDoc(tt.decl)
+			assert.Equal(t, tt.wantDoc, gotDoc)
+			assert.Equal(t, tt.wantBool, gotBool)
+		})
+	}
+}
+
 func TestGetFieldType(t *testing.T) {
 	t.Parallel()
 
@@ -4423,4 +4490,79 @@ var Func2 = Func
 	assert.True(t, ok)
 	assert.NotNil(t, val2.Get)
 	assert.Equal(t, val2.Get.OperationProps.Summary, "generate indirectly pointing")
+}
+
+func TestParser_DescriptionLineContinuation(t *testing.T) {
+	t.Parallel()
+
+	p := New()
+	searchDir := "testdata/description_line_continuation"
+	expected, err := os.ReadFile(filepath.Join(searchDir, "expected.json"))
+	assert.NoError(t, err)
+
+	err = p.ParseAPI(searchDir, mainAPIFile, defaultParseDepth)
+	assert.NoError(t, err)
+
+	b, err := json.MarshalIndent(p.swagger, "", "    ")
+	assert.NoError(t, err)
+	assert.Equal(t, string(expected), string(b))
+}
+
+// TestParser_ParseDefinitionWithRecursiveTypeAndNameAnnotation tests that @name annotations
+// are properly respected for recursive types
+func TestParser_ParseDefinitionWithRecursiveTypeAndNameAnnotation(t *testing.T) {
+	src := `package api
+
+// TreeNode represents a node in a tree structure
+type TreeNode struct {
+	Value    string     ` + "`json:\"value\"`" + `
+	Children []TreeNode ` + "`json:\"children\"`" + `
+} // @name TreeNode
+
+// LinkedNode represents a node in a linked structure
+type LinkedNode struct {
+	Data string       ` + "`json:\"data\"`" + `
+	Next *LinkedNode  ` + "`json:\"next\"`" + `
+} // @name CustomLinkedNode
+`
+
+	p := New()
+	err := p.packages.ParseFile("api", "api/tree.go", src, ParseAll)
+	assert.NoError(t, err)
+
+	_, err = p.packages.ParseTypes()
+	assert.NoError(t, err)
+
+	// Find the TreeNode type
+	treeNodeDef := p.packages.FindTypeSpec("api.TreeNode", nil)
+	assert.NotNil(t, treeNodeDef)
+
+	// Parse the TreeNode definition
+	schema, err := p.ParseDefinition(treeNodeDef)
+	assert.NoError(t, err)
+	assert.NotNil(t, schema)
+	assert.Equal(t, "TreeNode", schema.Name) // Should use @name annotation
+
+	// Find the LinkedNode type
+	linkedNodeDef := p.packages.FindTypeSpec("api.LinkedNode", nil)
+	assert.NotNil(t, linkedNodeDef)
+
+	// Parse the LinkedNode definition
+	schema2, err := p.ParseDefinition(linkedNodeDef)
+	assert.NoError(t, err)
+	assert.NotNil(t, schema2)
+	assert.Equal(t, "CustomLinkedNode", schema2.Name) // Should use @name annotation
+
+	// Verify the definitions were added to swagger with correct names
+	assert.NotNil(t, p.swagger.Definitions["TreeNode"])
+	assert.NotNil(t, p.swagger.Definitions["CustomLinkedNode"])
+
+	// The fix is working if the definitions use the @name annotation
+	// TreeNode should be "TreeNode", not "api.TreeNode"
+	// LinkedNode should be "CustomLinkedNode", not "api.LinkedNode"
+	for name := range p.swagger.Definitions {
+		// Ensure no definitions use the full package path format
+		assert.NotContains(t, name, "api.TreeNode")
+		assert.NotContains(t, name, "api.LinkedNode")
+	}
 }

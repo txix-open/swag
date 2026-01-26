@@ -19,6 +19,7 @@ var _ FieldParser = &tagBaseFieldParser{p: nil, field: nil, tag: ""}
 const (
 	requiredLabel    = "required"
 	optionalLabel    = "optional"
+	omitEmptyLabel   = "omitempty"
 	swaggerTypeTag   = "swaggertype"
 	swaggerIgnoreTag = "swaggerignore"
 )
@@ -126,7 +127,7 @@ func toSnakeCase(in string) string {
 		out    []rune
 	)
 
-	for idx := 0; idx < length; idx++ {
+	for idx := range length {
 		if idx > 0 && unicode.IsUpper(runes[idx]) &&
 			((idx+1 < length && unicode.IsLower(runes[idx+1])) || unicode.IsLower(runes[idx-1])) {
 			out = append(out, '_')
@@ -184,9 +185,9 @@ type structField struct {
 	minLength    *int64
 	maxItems     *int64
 	minItems     *int64
-	exampleValue interface{}
-	enums        []interface{}
-	enumVarNames []interface{}
+	exampleValue any
+	enums        []any
+	enumVarNames []any
 	unique       bool
 	pattern      string
 }
@@ -411,8 +412,8 @@ func (ps *tagBaseFieldParser) complementSchema(schema *spec.Schema, types []stri
 
 	schema.ReadOnly = ps.tag.Get(readOnlyTag) == "true"
 
-	defaultTagValue := ps.tag.Get(defaultTag)
-	if defaultTagValue != "" {
+	defaultTagValue, ok := ps.tag.Lookup(defaultTag)
+	if ok {
 		value, err := defineType(field.schemaType, defaultTagValue)
 		if err != nil {
 			return err
@@ -449,13 +450,13 @@ func (ps *tagBaseFieldParser) complementSchema(schema *spec.Schema, types []stri
 		if field.schemaType == ARRAY {
 			// Add the var names in the items schema
 			if schema.Items.Schema.Extensions == nil {
-				schema.Items.Schema.Extensions = map[string]interface{}{}
+				schema.Items.Schema.Extensions = map[string]any{}
 			}
 			schema.Items.Schema.Extensions[enumVarNamesExtension] = field.enumVarNames
 		} else {
 			// Add to top level schema
 			if schema.Extensions == nil {
-				schema.Extensions = map[string]interface{}{}
+				schema.Extensions = map[string]any{}
 			}
 			schema.Extensions[enumVarNamesExtension] = field.enumVarNames
 		}
@@ -469,7 +470,10 @@ func (ps *tagBaseFieldParser) complementSchema(schema *spec.Schema, types []stri
 		schema.MinItems = field.minItems
 		schema.UniqueItems = field.unique
 
-		eleSchema = schema.Items.Schema
+		if schema.Items != nil {
+			eleSchema = schema.Items.Schema
+		}
+
 		eleSchema.Format = field.formatType
 	}
 
@@ -548,6 +552,14 @@ func (ps *tagBaseFieldParser) IsRequired() (bool, error) {
 			case requiredLabel:
 				return true, nil
 			case optionalLabel:
+				return false, nil
+			}
+		}
+	}
+	jsonTag := ps.tag.Get(jsonTag)
+	if jsonTag != "" {
+		for _, val := range strings.Split(jsonTag, ",") {
+			if val == omitEmptyLabel {
 				return false, nil
 			}
 		}
@@ -819,5 +831,3 @@ func parseOneOfParam2(param string) []string {
 
 	return values
 }
-
-// ---.

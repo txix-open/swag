@@ -27,27 +27,29 @@ var open = os.Open
 // DefaultOverridesFile is the location swagger will look for type overrides.
 const DefaultOverridesFile = ".swaggo"
 
-type genTypeWriter func(*Config, *spec.Swagger) error
+type genTypeWriter func(*Config, string, *spec.Swagger) error
 
 // Gen presents a generate tool for swag.
 type Gen struct {
-	json          func(data interface{}) ([]byte, error)
-	jsonIndent    func(data interface{}) ([]byte, error)
-	jsonToYAML    func(data []byte) ([]byte, error)
-	outputTypeMap map[string]genTypeWriter
-	debug         Debugger
+	json                 func(data any) ([]byte, error)
+	jsonIndent           func(data any) ([]byte, error)
+	jsonToYAML           func(data []byte) ([]byte, error)
+	outputTypeMap        map[string]genTypeWriter
+	debug                Debugger
+	filenameByOutputType map[string]string
+	embeddingNames       map[string]string
 }
 
 // Debugger is the interface that wraps the basic Printf method.
 type Debugger interface {
-	Printf(format string, v ...interface{})
+	Printf(format string, v ...any)
 }
 
 // New creates a new Gen.
 func New() *Gen {
 	gen := Gen{
 		json: json.Marshal,
-		jsonIndent: func(data interface{}) ([]byte, error) {
+		jsonIndent: func(data any) ([]byte, error) {
 			return json.MarshalIndent(data, "", "    ")
 		},
 		jsonToYAML: yaml.JSONToYAML,
@@ -59,6 +61,19 @@ func New() *Gen {
 		"json": gen.writeJSONSwagger,
 		"yaml": gen.writeYAMLSwagger,
 		"yml":  gen.writeYAMLSwagger,
+	}
+
+	gen.filenameByOutputType = map[string]string{
+		"go":   "docs.go",
+		"json": "swagger.json",
+		"yaml": "swagger.yaml",
+		"yml":  "swagger.yaml",
+	}
+
+	gen.embeddingNames = map[string]string{
+		"json": "SwaggerJson",
+		"yaml": "SwaggerYaml",
+		"yml":  "SwaggerYaml",
 	}
 
 	return &gen
@@ -108,6 +123,9 @@ type Config struct {
 	// ParseDependencies whether swag should be parse outside dependency folder: 0 none, 1 models, 2 operations, 3 all
 	ParseDependency int
 
+	// UseStructNames stick to the struct name instead of those ugly full-path names
+	UseStructNames bool
+
 	// ParseInternal whether swag should parse internal packages
 	ParseInternal bool
 
@@ -149,6 +167,12 @@ type Config struct {
 
 	// ParseFuncBody whether swag should parse api info inside of funcs
 	ParseFuncBody bool
+
+	// ParseGoPackages whether swag use golang.org/x/tools/go/packages to parse source.
+	ParseGoPackages bool
+
+	// EmbedOutputTypes defines which output formats should be embedded into swagger.go.
+	EmbedOutputTypes []string
 }
 
 // Build builds swagger json file  for given searchDir and mainAPIFile. Returns json.
@@ -161,9 +185,11 @@ func (g *Gen) Build(config *Config) error {
 	}
 
 	searchDirs := strings.Split(config.SearchDir, ",")
-	for _, searchDir := range searchDirs {
-		if _, err := os.Stat(searchDir); os.IsNotExist(err) {
-			return fmt.Errorf("dir: %s does not exist", searchDir)
+	if !config.ParseGoPackages { // packages.Load support pattern like ./...
+		for _, searchDir := range searchDirs {
+			if _, err := os.Stat(searchDir); os.IsNotExist(err) {
+				return fmt.Errorf("dir: %s does not exist", searchDir)
+			}
 		}
 	}
 
@@ -198,6 +224,7 @@ func (g *Gen) Build(config *Config) error {
 
 	p := swag.New(
 		swag.SetParseDependency(config.ParseDependency),
+		swag.SetUseStructName(config.UseStructNames),
 		swag.SetMarkdownFileDirectory(config.MarkdownFilesDir),
 		swag.SetDebugger(config.Debugger),
 		swag.SetExcludedDirsAndFiles(config.Excludes),
@@ -217,6 +244,7 @@ func (g *Gen) Build(config *Config) error {
 	p.RequiredByDefault = config.RequiredByDefault
 	p.HostState = config.State
 	p.ParseFuncBody = config.ParseFuncBody
+	p.ParseGoPackages = config.ParseGoPackages
 
 	if err := p.ParseAPIMultiSearchDir(searchDirs, config.MainAPIFile, config.ParseDepth); err != nil {
 		return err
@@ -228,23 +256,34 @@ func (g *Gen) Build(config *Config) error {
 		return err
 	}
 
+	outputTypes := make([]string, 0, len(config.OutputTypes))
 	for _, outputType := range config.OutputTypes {
 		outputType = strings.ToLower(strings.TrimSpace(outputType))
-		if typeWriter, ok := g.outputTypeMap[outputType]; ok {
-			if err := typeWriter(config, swagger); err != nil {
-				return err
-			}
-		} else {
+		typeWriter, ok := g.outputTypeMap[outputType]
+		if !ok {
 			log.Printf("output type '%s' not supported", outputType)
+			continue
+		}
+
+		filename := g.filenameByOutputType[outputType]
+		err := typeWriter(config, filename, swagger)
+		if err != nil {
+			return err
+		}
+		outputTypes = append(outputTypes, outputType)
+	}
+
+	if len(outputTypes) > 0 {
+		err := g.embedOutputTypes(config, outputTypes)
+		if err != nil {
+			return err
 		}
 	}
 
 	return nil
 }
 
-func (g *Gen) writeDocSwagger(config *Config, swagger *spec.Swagger) error {
-	var filename = "docs.go"
-
+func (g *Gen) writeDocSwagger(config *Config, filename string, swagger *spec.Swagger) error {
 	if config.State != "" {
 		filename = config.State + "_" + filename
 	}
@@ -285,9 +324,54 @@ func (g *Gen) writeDocSwagger(config *Config, swagger *spec.Swagger) error {
 	return nil
 }
 
-func (g *Gen) writeJSONSwagger(config *Config, swagger *spec.Swagger) error {
-	var filename = "swagger.json"
+func (g *Gen) embedOutputTypes(config *Config, outputTypes []string) error {
+	toEmbed := make(map[string]bool, len(config.EmbedOutputTypes))
+	for _, outputType := range config.EmbedOutputTypes {
+		toEmbed[outputType] = true
+	}
 
+	embedFmt := `//go:embed %s
+	%s []byte`
+	embeddingLines := make([]string, 0, len(toEmbed))
+	for _, outputType := range outputTypes {
+		shouldEmbed := toEmbed[outputType]
+		if !shouldEmbed {
+			continue
+		}
+
+		embedName, ok := g.embeddingNames[outputType]
+		if !ok {
+			log.Printf("embed output type '%s' not supported", outputType)
+			continue
+		}
+		outputFileName := g.filenameByOutputType[outputType]
+
+		embeddingLines = append(embeddingLines, fmt.Sprintf(embedFmt, outputFileName, embedName))
+	}
+
+	embeddingFileContent := fmt.Sprintf(embeddingFileContentFmt, strings.Join(embeddingLines, "\n"))
+
+	var filename = "swagger.go"
+	if config.State != "" {
+		filename = config.State + "_" + filename
+	}
+
+	if config.InstanceName != swag.Name {
+		filename = config.InstanceName + "_" + filename
+	}
+
+	embedFileName := path.Join(config.OutputDir, filename)
+
+	err := g.writeFile([]byte(embeddingFileContent), embedFileName)
+	if err != nil {
+		return err
+	}
+
+	g.debug.Printf("Creating embedded swagger.go file: %s", embedFileName)
+	return nil
+}
+
+func (g *Gen) writeJSONSwagger(config *Config, filename string, swagger *spec.Swagger) error {
 	if config.State != "" {
 		filename = config.State + "_" + filename
 	}
@@ -313,9 +397,7 @@ func (g *Gen) writeJSONSwagger(config *Config, swagger *spec.Swagger) error {
 	return nil
 }
 
-func (g *Gen) writeYAMLSwagger(config *Config, swagger *spec.Swagger) error {
-	var filename = "swagger.yaml"
-
+func (g *Gen) writeYAMLSwagger(config *Config, filename string, swagger *spec.Swagger) error {
 	if config.State != "" {
 		filename = config.State + "_" + filename
 	}
@@ -537,4 +619,14 @@ var Swagger{{ .State }}Info{{ if ne .InstanceName "swagger" }}{{ .InstanceName }
 func init() {
 	swag.Register(Swagger{{ .State }}Info{{ if ne .InstanceName "swagger" }}{{ .InstanceName }} {{- end }}.InstanceName(), Swagger{{ .State }}Info{{ if ne .InstanceName "swagger" }}{{ .InstanceName }} {{- end }})
 }
+`
+
+const embeddingFileContentFmt = `package docs
+
+import _ "embed"
+
+// Embedded swagger files.
+var (
+	%s
+)
 `
