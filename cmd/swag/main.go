@@ -45,6 +45,7 @@ const (
 	stateFlag                = "state"
 	parseFuncBodyFlag        = "parseFuncBody"
 	parseGoPackagesFlag      = "parseGoPackages"
+	embedOutputTypesFlag     = "embedOutputTypes"
 )
 
 var initFlags = []cli.Flag{
@@ -196,6 +197,12 @@ var initFlags = []cli.Flag{
 		Name:  parseGoPackagesFlag,
 		Usage: "Parse Go sources by golang.org/x/tools/go/packages, disabled by default",
 	},
+	&cli.StringFlag{
+		Name:    embedOutputTypesFlag,
+		Aliases: []string{"eot"},
+		Value:   "yaml",
+		Usage:   "List of output formats to embed (swagger.json, swagger.yaml), comma-separated (e.g. json,yaml)",
+	},
 }
 
 func initAction(ctx *cli.Context) error {
@@ -250,6 +257,9 @@ func initAction(ctx *cli.Context) error {
 			pdv = 1
 		}
 	}
+
+	embedOutputTypes := strings.Split(ctx.String(embedOutputTypesFlag), ",")
+
 	return gen.New().Build(&gen.Config{
 		SearchDir:           ctx.String(searchDirFlag),
 		Excludes:            ctx.String(excludeFlag),
@@ -280,6 +290,7 @@ func initAction(ctx *cli.Context) error {
 		State:               ctx.String(stateFlag),
 		ParseFuncBody:       ctx.Bool(parseFuncBodyFlag),
 		ParseGoPackages:     ctx.Bool(parseGoPackagesFlag),
+		EmbedOutputTypes:    embedOutputTypes,
 	})
 }
 
