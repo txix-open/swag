@@ -349,6 +349,11 @@ func (g *Gen) embedOutputTypes(config *Config, outputTypes []string) error {
 		embeddingLines = append(embeddingLines, fmt.Sprintf(embedFmt, outputFileName, embedName))
 	}
 
+	if len(embeddingLines) == 0 {
+		g.debug.Printf("Skip creating embedded swagger.go files: nothing to embed")
+		return nil
+	}
+
 	embeddingFileContent := fmt.Sprintf(embeddingFileContentFmt, strings.Join(embeddingLines, "\n"))
 
 	var filename = "swagger.go"
