@@ -200,7 +200,6 @@ var initFlags = []cli.Flag{
 	&cli.StringFlag{
 		Name:    embedOutputTypesFlag,
 		Aliases: []string{"eot"},
-		Value:   "yaml",
 		Usage:   "List of output formats to embed (swagger.json, swagger.yaml), comma-separated (e.g. json,yaml)",
 	},
 }
